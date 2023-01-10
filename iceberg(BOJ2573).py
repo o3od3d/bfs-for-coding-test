@@ -1,78 +1,74 @@
 """
-0은 바다
-각 칸의 빙산은 바닷물에 접한 칸의 수만큼 줄어든다
-0보다 낮아지지 않는다.
-한 덩어리의 빙산이 두 덩어리 이상으로 분리되는 최소 시간?
-두 덩어리 이상으로 분리되지 않으면 0 출력
+각 빙산에 상하좌우에 붙어 있는 0 개수만큼 빙산의 크기가 줄어든다.
+단, 0 이하로 내려갈 수 없다.
+하나의 덩어리가 2개 이상의 덩어리로 분리될 때까지 몇년이 걸리는지 분리되지 않으면 0
 
-1.아이디어
- - 2 중 for문 => 0아닌 것 주변 0 갯수 세어 빙산 줄이기
- - 덩어리 갯수 세기
+1. 아이디어
+ - 2 중 for문 : 0의 갯수만큼 빼주기(마지막에) & 방문 x
+ - 덩어리 개수 확인
 
 2. 시간복잡도
- - O(V+E) < 2억 가능
- -V : 300 * 300
+ - O(V+E)
+ - V : 300 * 300
  - E : 4V
 
 3. 자료구조
- - 그래프 : INT[][]
- - QUEUE : 덩어리 갯수
+ - 그래프 : int[][]
+ - 방문 : bool[][]
 
 """
-import copy
-from collections import deque
 import sys
 input = sys.stdin.readline
-N,M = map(int,input().split())
-board = [list(map(int,input().split())) for _ in range(N)]
-direction = [[0,1],[0,-1],[1,0],[-1,0]]
-ans = 0
+from collections import deque
 
-def bfs(x,y,tag):
-    q = deque()
-    q.append([x,y])
-    tmp = copy.deepcopy(board)
-    flag = 0
+
+def bfs(x,y):
+    q = deque([(x,y)])
+    visited[x][y] = 1
+    sea = []
     while q:
         x,y = q.popleft()
-        if board[x][y] > 0:
-            flag = 1
-            cnt = 0
+        cnt = 0
         for dir in direction:
             nx = x + dir[0]
             ny = y + dir[1]
             if 0 <= nx < N and 0 <= ny < M:
-                if board[x][y] > 0 and board[nx][ny] == 0 and tag == 1:
-                    tmp[x][y] -= 1
-                    if tmp[x][y] < 0:
-                        tmp[x][y] = 0
-                if board[nx][ny] > 0 and not visited[nx][ny]:
-                    q.append([nx,ny])
-                    visited[nx][ny] = True
-    return flag,tmp
+                if not board[nx][ny]:
+                    cnt += 1
+                elif board[nx][ny] and not visited[nx][ny]:
+                    visited[nx][ny] = 1
+                    q.append((nx,ny))
+        if cnt > 0:
+            sea.append((x,y,cnt))
+    for x,y,cnt in sea:
+        board[x][y] = max(0,board[x][y] - cnt)
+    return 1
+
+N,M = map(int,input().split())
+board = [list(map(int,input().split())) for _ in range(N)]
+ans = 0
+direction = [[0,1],[0,-1],[1,0],[-1,0]]
+ice = []
+for i in range(N):
+    for j in range(M):
+        if board[i][j]:
+            ice.append((i,j))
+
 
 while True:
-
-    ans += 1
-
-
-    # 덩어리 갯수 구하기
-    visited = [[False] * M for _ in range(N)]
-    cnt = 0
-    for i in range(N):
-        for j in range(M):
-            if board[i][j] > 0 and not visited[i][j]:
-                visited[i][j] = True
-                cnt += 1
-                flag,tmp = bfs(i,j,cnt)
-                if cnt == 1:
-                    board = tmp
-                    if flag == 0:
-                        print(0)
-                        exit()
-
-
-
-    if cnt > 1:
+    res = []
+    visited = [[0] * M for _ in range(N)]
+    group = 0
+    for i,j in ice:
+        if board[i][j] and not visited[i][j]:
+            group += bfs(i,j)
+        if board[i][j] == 0:
+            res.append((i,j))
+    if group > 1:
         print(ans)
         break
+    ice = sorted(list(set(ice) - set(res)))
+    ans += 1
+
+if group < 2:
+    print(0)
